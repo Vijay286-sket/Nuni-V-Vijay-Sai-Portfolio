@@ -17,7 +17,7 @@ function ResumeButton({ variant = 'primary', children = 'Download Resume' }) {
     let found = ''
     for (const p of candidates) {
       try {
-        const res = await fetch(p, { method: 'HEAD' })
+        const res = await fetch(p, { method: 'GET', cache: 'no-store' })
         if (res.ok) { found = p; break }
       } catch {}
     }
@@ -25,12 +25,22 @@ function ResumeButton({ variant = 'primary', children = 'Download Resume' }) {
       alert('Resume file not found. Please place it in public/assets (e.g., Nuni_V_Vijay_Sai_Resume.pdf).')
       return
     }
-    const a = document.createElement('a')
-    a.href = found
-    a.download = 'Nuni_V_Vijay_Sai_Resume.pdf'
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
+    try {
+      const res = await fetch(found, { method: 'GET', cache: 'no-store' })
+      if (!res.ok) throw new Error('fetch failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'Nuni_V_Vijay_Sai_Resume.pdf'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      // Fallback: open in new tab letting the browser download/view
+      window.open(found, '_blank')
+    }
   }
   const cls = variant === 'primary' ? 'btn-primary' : 'btn-ghost'
   return (
